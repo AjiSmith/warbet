@@ -1,0 +1,179 @@
+<!-- admin.html -->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Warung Beta - Admin</title>
+      <link rel="icon" type="image/png" href="assets/images/icon.png">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron&display=swap" rel="stylesheet">
+  <style>
+    body {
+      background-color: #0a0a0a;
+      color: #fff;
+      font-family: 'Orbitron', sans-serif;
+      padding: 20px;
+      margin: 0;
+    }
+    h1 {
+      text-align: center;
+      font-size: 1.8em;
+      background: linear-gradient(to right, #ff00ff, #8000ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      padding: 10px;
+      border: 3px solid;
+      border-image: linear-gradient(to right, #00f7ff, #8000ff) 1;
+      border-radius: 30px;
+      margin-bottom: 90px;
+    }
+    #logoutBtn {
+      background: #f00;
+      color: #fff;
+      border: none;
+      padding: 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      float: right;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      font-size: 0.9em;
+    }
+    th, td {
+      border: 2px solid;
+      color: #00f7ff;
+      padding: 10px;
+    }
+    th {
+      background-color: #111;
+      box-shadow: -1px 2px 46px 0px rgba(155,0,255,0.75);
+      -webkit-box-shadow: -1px 2px 46px 0px rgba(155,0,255,0.75);
+      -moz-box-shadow: -1px 2px 46px 0px rgba(155,0,255,0.75);
+    }
+    tr:nth-child(even) {
+      background-color: #1a1a1a;
+    }
+    canvas {
+      background: #111;
+      border-radius: 10px;
+      margin-top: 20px;
+      width: 100%;
+      max-width: 600px;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    @media (max-width: 600px) {
+      h1 { font-size: 1.4em; }
+      table, th, td { font-size: 0.8em; }
+    }
+  </style>
+</head>
+<body>
+<h1 id="title">Warung Beta - Admin Dashboard</h1>
+<button id="logoutBtn" onclick="logout()">Logout</button>
+<canvas id="chart"></canvas>
+<table id="pesananTable">
+  <thead>
+    <tr>
+      <th>Tanggal</th>
+      <th>Nama</th>
+      <th>Produk</th>
+      <th>Catatan</th>
+      <th>Bukti</th>
+      <th>Device</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyDanI_Cbun76PnA4euENuc1thXER4pvZK0",
+    authDomain: "warungbetadashboard.firebaseapp.com",
+    projectId: "warungbetadashboard",
+    storageBucket: "warungbetadashboard.firebasestorage.app",
+    messagingSenderId: "1096569835977",
+    appId: "1:1096569835977:web:d909dd91e07eb8baec9818",
+    measurementId: "G-BS4JK6VKPR"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  if (localStorage.getItem('loggedIn') !== 'yes' || !localStorage.getItem('role')) {
+    alert("Akses ditolak. Silakan login kembali.");
+    window.location.href = 'login.html';
+  }
+  const role = localStorage.getItem('role');
+  const titleText = role === 'superadmin' ? 'Warung Beta - Dashboard\nLogged as Azimas' : 'Warung beta - Dashboard\n Logged as Moderator';
+  document.getElementById("title").innerText = titleText;
+
+  function logout() {
+    firebase.auth().signOut().then(() => {
+      localStorage.clear();
+      window.location.href = 'login.html';
+    });
+  }
+
+  const sheetURL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTuujyiOmjdPaAuWuQuYIwL4nXy3yXoMmTFALkr4qjr85pe6JSJRXxo8-IokPLv1P0j0Ob0e7uQRVxh/pub?output=csv';
+
+  async function loadCSV() {
+    const res = await fetch(sheetURL);
+    const text = await res.text();
+    const rows = text.trim().split('\n').map(r => r.split(','));
+    buildTable(rows);
+    buildChart(rows);
+  }
+
+  function buildTable(rows) {
+    const tbody = document.querySelector('#pesananTable tbody');
+    rows.slice(1).forEach(row => {
+      const [tgl,nama,produk,catatan,bukti,device] = row;
+      const buktiLink = bukti.startsWith('http') ? `<a href="${bukti}" target="_blank">Lihat</a>` : '-';
+      tbody.innerHTML += `<tr>
+        <td>${tgl}</td>
+        <td>${nama}</td>
+        <td>${produk}</td>
+        <td>${catatan}</td>
+        <td>${buktiLink}</td>
+        <td>${device}</td>
+      </tr>`;
+    });
+  }
+
+  function buildChart(rows) {
+    const produkMap = {};
+    rows.slice(1).forEach(row => {
+      const p = row[2];
+      produkMap[p] = (produkMap[p] || 0) + 1;
+    });
+    const labels = Object.keys(produkMap);
+    const data = Object.values(produkMap);
+    new Chart(document.getElementById('chart'), {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Jumlah Pesanan',
+          backgroundColor: '#0ff',
+          data
+        }]
+      },
+      options: {
+        scales: {
+          y: { beginAtZero: true }
+        }
+      }
+    });
+  }
+
+  loadCSV();
+</script>
+</body>
+</html>

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Warung Beta - Order</title>
+  <link rel="icon" type="image/png" href="assets/images/icon.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      background-color: #0a0a0a;
+      color: #fff;
+      font-family: 'Orbitron', sans-serif;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      font-size: 1.6em;
+      background: linear-gradient(to bottom, #ff00ff, #420085);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 40px;
+    }
+    form {
+      max-width: 500px;
+      margin: auto;
+      background: #111;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 15px #ff00ff;
+    }
+    label {
+      display: block;
+      margin-top: 15px;
+    }
+    input, select, textarea, button {
+      width: 96%;
+      padding: 10px;
+      margin-top: 8px;
+      background: #000;
+      color: #ffffff;
+      border: 2px solid #420085;
+      border-radius: 8px;
+    }
+    button {
+      background: linear-gradient(to bottom, #ff00cc, #420085);
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .success {
+      margin-top: 15px;
+      color: lime;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Form Pemesanan Warung Beta</h1>
+
+<form id="orderForm">
+  <label for="nama">Nama Pembeli</label>
+  <input type="text" id="nama" required>
+
+  <label for="produk">Produk</label>
+  <select id="produk" required>
+    <option value="">Pilih Produk</option>
+    <option value="Textdraw">Textdraw</option>
+    <option value="Maps">Maps</option>
+    <option value="Gamemode">Gamemode</option>
+    <option value="Filterscript">Filterscript</option>
+  </select>
+
+  <label for="catatan">Catatan</label>
+  <textarea id="catatan" rows="3"></textarea>
+
+  <input type="hidden" id="device">
+
+  <button type="submit">Kirim Pesanan</button>
+  <div class="success" id="suksesMsg" style="display:none;">✅ Pesanan berhasil dikirim!</div>
+</form>
+
+<script>
+  document.getElementById('device').value = navigator.userAgent;
+
+  const scriptURL = 'https://script.google.com/macros/s/AKfycbxLMHNTY5xZEQfsw9TCxBudIczXWc9lqTTGvyorHciRXFHcs6I_agrsWi-3lMtGull3/exec'; // GANTI INI
+
+  document.getElementById('orderForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const data = {
+      nama: document.getElementById('nama').value,
+      produk: document.getElementById('produk').value,
+      catatan: document.getElementById('catatan').value || '-',
+      device: document.getElementById('device').value
+    };
+
+    try {
+      const res = await fetch(scriptURL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      });
+
+      if (res.ok) {
+        document.getElementById('orderForm').reset();
+        document.getElementById('suksesMsg').style.display = 'block';
+      } else {
+        alert('Gagal mengirim pesanan. Status: ' + res.status);
+      }
+    } catch (err) {
+      alert("Gagal: " + err.message);
+    }
+  });
+</script>
+
+</body>
+</html>
